@@ -1,4 +1,5 @@
 import os
+import re
 import pytesseract
 
 from PIL import Image, ImageFile
@@ -52,14 +53,34 @@ class StatementExtractor:
             raise ValueError("Invalid or missing file path")
         
         Utils.file_exists(path, raise_exception=True)
-        self.image = Utils.open_image(self.path, raise_exception=True)
+        self.image = Utils.open_image(path, raise_exception=True)
+        self.SUPPORTED_BANK = ['PUBLIC']
         
     def preprocess(self) -> None:
+        self.__image_preprocess()
+
+    def __image_preprocess(self) -> None:
+        # increase sharpess etc
         pass
 
+    def __get_bank(self, statement_content: str) -> None:
+        pattern = r'(?i)(\b\w+\b)\s+BANK'
+        matches = re.findall(pattern, statement_content)
+
+        if not matches:
+            raise ValueError("Unable to detect the bank name from the statement")
+        
+        self.bank_name = matches[0]
+
+        if self.bank_name.upper() not in self.SUPPORTED_BANK:
+            raise ValueError(f"Statement of the bank not supported. Currently supports only {self.SUPPORTED_BANK}")
+
     def ocr(self):
+        self.preprocess()
         text = pytesseract.image_to_string(self.image)
-        return text
+        self.__get_bank(text)
+
+        return ""
 
 
 
@@ -68,5 +89,7 @@ if __name__ == "__main__":
     # converter.convert()
 
     ocr = StatementExtractor("converted_test_pdf_1.PNG")
-    ocr.preprocess()
-    print(ocr.ocr())
+    try:
+        print(ocr.ocr())
+    except Exception as e:
+        print(f'ERROR: {e}')
