@@ -1,3 +1,9 @@
 pdf2image==1.17.0
 pillow==10.4.0
 pytesseract==0.3.13
+fastapi==0.115.0
+SQLAlchemy==2.0.35
+postgresql
+postgresql-contrib
+psycopg2-binary==2.9.9
+python-decouple==3.8
