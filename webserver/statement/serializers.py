@@ -51,20 +51,18 @@ class StatementResponse(BaseModel):
     name: str
     statement_date: datetime
     created_at: datetime
-    detail: List[StatementDetailResponse]
+    detail: StatementDetailResponse
     transactions: List[StatementTransactionResponse]
 
     @staticmethod
     def serialize(statement: Statement) -> "StatementResponse":
-        detail = [
-            StatementDetailResponse(
-                id=detail.id,
-                total_debit=detail.total_debit,
-                total_credit=detail.total_credit,
-                no_debit=detail.no_debit,
-                no_credit=detail.no_credit
-            ) for detail in statement.detail
-        ]
+        detail = StatementDetailResponse(
+            id=statement.detail.id,
+            total_debit=statement.detail.total_debit,
+            total_credit=statement.detail.total_credit,
+            no_debit=statement.detail.no_debit,
+            no_credit=statement.detail.no_credit
+        )
 
         transactions = [
             StatementTransactionResponse(

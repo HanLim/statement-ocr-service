@@ -13,7 +13,7 @@ class Statement(Base):
     statement_date = Column(DateTime)
     created_at = Column(DateTime, default=datetime.now())
 
-    detail = relationship("StatementDetails", back_populates="statement")
+    detail = relationship("StatementDetails", back_populates="statement", uselist=False)
     transactions = relationship("StatementTransaction", back_populates="statement")
 
 
