@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends, File, UploadFile
 from sqlalchemy.orm import Session
 from typing import List
+import os
 
 from ..database import get_db
 from ..statement.models import Statement
@@ -33,11 +34,16 @@ async def create_statement(statement_data: StatementCreate, db: Session=Depends(
 @router.post("/upload/")
 async def upload_statement(file: UploadFile = File(...)):
     content = await file.read()
-    filename = file.filename
-    content_type = file.content_type
 
-    return {
-        "filename": filename,
-        "content_type": content_type,
-        "size": len(content)
-    }
+    with open(file.filename, "wb") as new_file:
+        new_file.write(content)
+
+    converter = PdfToImageConverter(file.filename)
+    images = converter.convert()
+
+    for image in images:
+        os.remove(image)
+    os.remove(file.filename)
+    # sudo apt-get install poppler-utils
+
+    return 

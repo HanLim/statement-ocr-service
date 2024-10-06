@@ -4,6 +4,7 @@ from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Float
 
 from ..database import Base
 
+
 class Statement(Base):
     __tablename__ = "statement"
 

@@ -3,7 +3,7 @@ import re
 import pytesseract
 
 from PIL import Image, ImageFile
-from typing import Optional
+from typing import Optional, List
 from pdf2image import convert_from_path
 
 class Utils:
@@ -33,18 +33,23 @@ class PdfToImageConverter:
         if target_type not in ["JPG", "PNG"]:
             raise ValueError("Invalid image target type")
         
-        Utils.file_exists(self.path, raise_exception=True)
+        Utils.file_exists(path, raise_exception=True)
         
         self.path = path
         self.target_type = target_type
         self.converted_path = []
     
-    def convert(self):
+    def convert(self) -> List[str]:
         images = convert_from_path(self.path)
         filename = self.path.split(".")[0]
 
+        names = []
         for i, image in enumerate(images):
-            image.save(f"converted_{filename}_{i + 1}.{self.target_type}", self.target_type)
+            image_name = f"converted_{filename}_{i + 1}.{self.target_type}"
+            image.save(image_name, self.target_type)
+            names.append(image_name)
+
+        return names
 
 
 class StatementExtractor:
