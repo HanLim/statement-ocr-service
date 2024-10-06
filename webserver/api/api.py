@@ -25,30 +25,30 @@ async def get_one_statement(statement_id: int, db: Session = Depends(get_db)):
 
 @router.post("/")
 async def create_statement(statement_data: StatementCreate, db: Session = Depends(get_db)):
-    new_statement = Statement(
+    statement = Statement(
         address=statement_data.address,
         name=statement_data.name,
         statement_date=statement_data.statement_date,
     )
 
-    new_details = StatementDetails(
+    detail = StatementDetails(
         total_debit=statement_data.detail.total_debit,
         total_credit=statement_data.detail.total_credit,
         no_debit=statement_data.detail.no_debit,
         no_credit=statement_data.detail.no_credit
     )
     
-    new_statement.detail = [new_details, new_details]
+    statement.detail = [detail]
 
-    new_transaction = StatementTransaction(
-        transaction_date=statement_data.transactions[0].transaction_date,
-        amount=statement_data.transactions[0].amount
-    )
-    
-    new_statement.transactions.append(new_transaction)
+    for transaction in statement_data.transactions:
+        new_transaction = StatementTransaction(
+            transaction_date=transaction.transaction_date,
+            amount=transaction.amount
+        )
+        statement.transactions.append(new_transaction)
 
-    db.add(new_statement)
+    db.add(statement)
     db.commit()
-    db.refresh(new_statement)
+    db.refresh(statement)
 
-    return new_statement
+    return statement
