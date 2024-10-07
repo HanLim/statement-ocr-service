@@ -44,6 +44,5 @@ async def upload_statement(file: UploadFile = File(...)):
     for image in images:
         os.remove(image)
     os.remove(file.filename)
-    # sudo apt-get install poppler-utils
 
     return 
