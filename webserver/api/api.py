@@ -32,9 +32,8 @@ async def create_statement(statement_data: StatementCreate, db: Session=Depends(
     return statement
 
 
-# @router.post("/upload/", response_model=StatementResponse)
 @router.post("/upload/")
-async def upload_statement(file: UploadFile = File(...)):
+async def upload_statement(file: UploadFile = File(...), db: Session=Depends(get_db)):
     content = await file.read()
 
     with open(file.filename, "wb") as new_file:
@@ -45,9 +44,9 @@ async def upload_statement(file: UploadFile = File(...)):
 
     for image in images:
         extractor = StatementExtractor(image)
-        extractor.extract()
+        statement_data = extractor.extract()
+        statement = StatementCreate.create(statement_data, db)
         os.remove(image)
-
     os.remove(file.filename)
 
-    return
+    return statement

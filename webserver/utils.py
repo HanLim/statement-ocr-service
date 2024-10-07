@@ -1,7 +1,9 @@
 import os
 import re
 import pytesseract
+import pandas as pd
 
+from .statement.serializers import *
 from datetime import datetime
 from abc import ABC, abstractmethod
 from PIL import Image, ImageFile
@@ -25,6 +27,21 @@ class Utils:
         except Exception as e:
             if raise_exception:
                 raise e
+
+    @staticmethod
+    def largest_smaller(sorted_list: List[int], target: int) -> Optional[int]:
+        left, right = 0, len(sorted_list) - 1
+        result = None
+        
+        while left <= right:
+            mid = (left + right) // 2
+            if sorted_list[mid] < target:
+                result = sorted_list[mid]
+                left = mid + 1
+            else:
+                right = mid - 1
+
+        return result
 
 
 class PdfToImageConverter:
@@ -98,21 +115,38 @@ class StatementExtractor:
             "MAYBANK": MayBankSetting,
         }[self.bank_name]
 
+    def __get_transaction(self, text: str, df: pd.DataFrame, statement_date: datetime):
+        return self.setting.get_transaction(text, df, statement_date)
+
     # this logic currently only works for first page of PBB statement
-    def extract(self) -> None:
+    def extract(self) -> StatementCreate:
+        """
+        Alternatively, the total, counts, date etc can be done by cropping and OCR.
+        """
         self.preprocess()
+        df = pytesseract.image_to_data(self.image, output_type=pytesseract.Output.DATAFRAME)
         text = pytesseract.image_to_string(self.image)
         self.__get_bank(text)
         self.__set_bank_setting()
         address = self.__get_address()
-        date = self.__get_statement_date(text)
+        statement_date = self.__get_statement_date(text)
         total_debit, total_credit, count_debit, count_credit = self.__get_total(text)
-        # print(text)
+        transactions = self.__get_transaction(text, df, statement_date)
 
 
+        return StatementCreate(
+            address=address,
+            name=self.bank_name,
+            statement_date=statement_date,
+            detail={
+                "total_debit":total_debit,
+                "total_credit":total_credit,
+                "no_debit":count_debit,
+                "no_credit":count_credit,
+            },
+            transactions=transactions
+        )
 
-        return ""
-    
 
 class BankSetting(ABC):
     @staticmethod
@@ -126,6 +160,10 @@ class BankSetting(ABC):
     @staticmethod
     @abstractmethod
     def get_total(text: str) -> Tuple[float]: pass
+
+    @staticmethod
+    @abstractmethod
+    def get_transaction(text: str, df: pd.DataFrame, statement_date: datetime) -> List[dict]: pass
 
 
 class PublicBankSetting(BankSetting):
@@ -166,7 +204,50 @@ class PublicBankSetting(BankSetting):
         count_credit = __extract_count("Credits")
 
         return total_debit, total_credit, count_debit, count_credit
+    
+    @staticmethod
+    def get_transaction(text: str, df: pd.DataFrame, statement_date: datetime) -> List[dict]:
+        """
+        Hard code to retrieve the debit and credit transactions from the statement due to time constraint.
+        
+        Better way would be OCR and retrieve the approx x,y of the debit/credits column based on the header, 
+        instead of the magic number below.
+        """
+        debits = df[(df["left"] > 850) & (df["left"] < 1050) & (df["top"] > 950) & (df["top"] < 1200)]
+        credits = df[(df["left"] > 1050) & (df["left"] < 1250) & (df["top"] > 950) & (df["top"] < 1400)]
 
+        transaction_date_pattern = r'^\d{2}/\d{2}$'
+        date_df = df[df['text'].str.contains(transaction_date_pattern, regex=True, na=False)]
+        dates = { row['line_num']: row for _, row in date_df.iterrows() }
+        line_nums = sorted(dates)
+
+        def __prepare(tx_df: pd.DataFrame, negative: bool=False) -> None:
+            for _, tx in tx_df.iterrows():
+                line = tx["line_num"]
+
+                transaction_date = dates.get(line)
+                if transaction_date is None:
+                    line = Utils.largest_smaller(line_nums, line)
+                    if line is None:
+                        continue # skip the invalid line
+
+                date = f"{dates.get(line)['text']}/{statement_date.year}"
+                date = datetime.strptime(date, "%d/%m/%Y")
+
+                amount = float(tx["text"].replace(',', ''))
+                if negative:
+                    amount = -amount 
+
+                transactions.append({
+                    "transaction_date": date,
+                    "amount": amount
+                }) 
+
+        transactions = []
+        __prepare(debits, negative=True)
+        __prepare(credits)
+        
+        return transactions
 
 class MayBankSetting(BankSetting):
     @staticmethod
@@ -179,6 +260,10 @@ class MayBankSetting(BankSetting):
     
     @staticmethod
     def get_total(text: str) -> Tuple[float]:
+        raise NotImplementedError("Demo class, not implemented yet")
+    
+    @staticmethod
+    def get_transaction(text: str) -> List[dict]: 
         raise NotImplementedError("Demo class, not implemented yet")
     
 
