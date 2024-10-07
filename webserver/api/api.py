@@ -25,12 +25,14 @@ async def get_one_statement(statement_id: int, db: Session=Depends(get_db)):
     return StatementResponse.serialize(statement)
 
 
+# API to test create statement, not in the assessment scope
 @router.post("/")
 async def create_statement(statement_data: StatementCreate, db: Session=Depends(get_db)):
     statement = StatementCreate.create(statement_data, db)
     return statement
 
 
+# @router.post("/upload/", response_model=StatementResponse)
 @router.post("/upload/")
 async def upload_statement(file: UploadFile = File(...)):
     content = await file.read()
@@ -42,7 +44,10 @@ async def upload_statement(file: UploadFile = File(...)):
     images = converter.convert()
 
     for image in images:
+        extractor = StatementExtractor(image)
+        extractor.extract()
         os.remove(image)
+
     os.remove(file.filename)
 
-    return 
+    return
