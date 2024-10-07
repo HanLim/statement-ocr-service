@@ -1,0 +1,110 @@
+{
+	"info": {
+		"_postman_id": "8656a065-d3b2-4d2f-bd8b-9a17bcaabae2",
+		"name": "Statement OCR Service",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "1710213"
+	},
+	"item": [
+		{
+			"name": "List statement",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8000/statements/",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"statements",
+						""
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get statement",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8000/statements/6",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"statements",
+						"6"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Create statement",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"address\": \"string\",\r\n  \"name\": \"string\",\r\n  \"statement_date\": \"2024-10-06T09:32:07.794Z\",\r\n  \"detail\": {\r\n    \"total_debit\": 0,\r\n    \"total_credit\": 0,\r\n    \"no_debit\": 0,\r\n    \"no_credit\": 0\r\n  },\r\n  \"transactions\": [\r\n    {\r\n      \"transaction_date\": \"2024-10-06T09:32:07.795Z\",\r\n      \"amount\": 0\r\n    }\r\n  ]\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8000/statements/",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"statements",
+						""
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Upload statement",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "file",
+							"type": "file",
+							"src": "/home/hl/Downloads/test_pdf.pdf"
+						}
+					]
+				},
+				"url": {
+					"raw": "http://localhost:8000/statements/upload/",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"statements",
+						"upload",
+						""
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
