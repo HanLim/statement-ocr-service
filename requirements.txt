@@ -7,3 +7,4 @@ psycopg2-binary==2.9.9
 python-decouple==3.8
 fastapi[standard]==0.115.0
 alembic==1.13.3
+pandas==2.2.3
