@@ -5,7 +5,7 @@ import pytesseract
 from datetime import datetime
 from abc import ABC, abstractmethod
 from PIL import Image, ImageFile
-from typing import Optional, List
+from typing import Optional, List, Tuple
 from pdf2image import convert_from_path
 
 class Utils:
@@ -83,11 +83,14 @@ class StatementExtractor:
         if self.bank_name.upper() not in self.SUPPORTED_BANK:
             raise ValueError(f"Statement of the bank not supported. Currently supports only {self.SUPPORTED_BANK}")
     
-    def __get_address(self):
+    def __get_address(self) -> str:
         return self.setting.get_address(self.image)
 
-    def __get_statement_date(self, text: str):
+    def __get_statement_date(self, text: str) -> datetime:
         return self.setting.get_statement_date(text)
+    
+    def __get_total(self, text: str) -> Tuple[float]:
+        return self.setting.get_total(text)
         
     def __set_bank_setting(self) -> None:
         self.setting: BankSetting = {
@@ -103,9 +106,10 @@ class StatementExtractor:
         self.__set_bank_setting()
         address = self.__get_address()
         date = self.__get_statement_date(text)
-
+        total_debit, total_credit, count_debit, count_credit = self.__get_total(text)
         # print(text)
-        
+
+
 
         return ""
     
@@ -113,38 +117,70 @@ class StatementExtractor:
 class BankSetting(ABC):
     @staticmethod
     @abstractmethod
-    def get_address(image: ImageFile): pass
+    def get_address(image: ImageFile) -> str: pass
     
     @staticmethod
     @abstractmethod
-    def get_statement_date(text: str): pass
+    def get_statement_date(text: str) -> datetime: pass
+
+    @staticmethod
+    @abstractmethod
+    def get_total(text: str) -> Tuple[float]: pass
 
 
 class PublicBankSetting(BankSetting):
     @staticmethod
-    def get_address(image: ImageFile):
+    def get_address(image: ImageFile) -> str:
         crop_area = (200, 300, 580, 450)
         cropped_image = image.crop(crop_area)
         return pytesseract.image_to_string(cropped_image)
     
     @staticmethod
-    def get_statement_date(text: str): 
-        pattern = r'Tarikh Penyata / Statement Date (\d{1,2} \w{3} \d{4})'
+    def get_statement_date(text: str) -> datetime: 
+        pattern = r'Statement Date\s*(\d{1,2}\s\w{3}\s\d{4})'
         statement_date = re.search(pattern, text)
         if not statement_date:
             raise LookupError("Statement date not found")
         statement_date = datetime.strptime(statement_date.group(1), '%d %b %Y')
         return statement_date
+    
+    @staticmethod
+    def get_total(text: str) -> Tuple[float]:
+        def __extract_total(transaction_type: str) -> float:
+            pattern = rf'Total\s*' + transaction_type + r'\s*([\d,]+(?:\.\d{2}))'
+            total = re.search(pattern, text)
+            if not total:
+                raise LookupError(f"Total {transaction_type} not found")
+            return float(total.group(1).replace(',', ''))
+        
+        def __extract_count(transaction_type: str) -> int:
+            pattern = rf'No\.\s*of\s*' + transaction_type + r'\s*(\d+)'
+            count = re.search(pattern, text)
+            if not count:
+                raise LookupError(f"No. of {transaction_type} not found")
+            return int(count.group(1).replace(',', ''))
+        
+        total_debit = __extract_total("Debits")
+        total_credit = __extract_total("Credits")
+        count_debit = __extract_count("Debits")
+        count_credit = __extract_count("Credits")
+
+        return total_debit, total_credit, count_debit, count_credit
 
 
 class MayBankSetting(BankSetting):
     @staticmethod
-    def get_address(image: ImageFile):
+    def get_address(image: ImageFile) -> str:
         raise NotImplementedError("Demo class, not implemented yet")
 
     @staticmethod
-    def get_statement_date(text: str):
+    def get_statement_date(text: str) -> datetime:
         raise NotImplementedError("Demo class, not implemented yet")
+    
+    @staticmethod
+    def get_total(text: str) -> Tuple[float]:
+        raise NotImplementedError("Demo class, not implemented yet")
+    
 
 if __name__ == "__main__":
     # converter = PdfToImageConverter("test_pdf.pdf")
