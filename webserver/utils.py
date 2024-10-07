@@ -151,19 +151,19 @@ class StatementExtractor:
 class BankSetting(ABC):
     @staticmethod
     @abstractmethod
-    def get_address(image: ImageFile) -> str: pass
+    def get_address(image: ImageFile) -> str: ...
     
     @staticmethod
     @abstractmethod
-    def get_statement_date(text: str) -> datetime: pass
+    def get_statement_date(text: str) -> datetime: ...
 
     @staticmethod
     @abstractmethod
-    def get_total(text: str) -> Tuple[float]: pass
+    def get_total(text: str) -> Tuple[float]: ...
 
     @staticmethod
     @abstractmethod
-    def get_transaction(text: str, df: pd.DataFrame, statement_date: datetime) -> List[dict]: pass
+    def get_transaction(text: str, df: pd.DataFrame, statement_date: datetime) -> List[dict]: ...
 
 
 class PublicBankSetting(BankSetting):
@@ -263,7 +263,7 @@ class MayBankSetting(BankSetting):
         raise NotImplementedError("Demo class, not implemented yet")
     
     @staticmethod
-    def get_transaction(text: str) -> List[dict]: 
+    def get_transaction(text: str, df: pd.DataFrame, statement_date: datetime) -> List[dict]:
         raise NotImplementedError("Demo class, not implemented yet")
     
 
